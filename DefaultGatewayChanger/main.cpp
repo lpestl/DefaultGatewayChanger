@@ -1,13 +1,14 @@
 #include <stdio.h>
-//#include <Windows.h>
+#include <Windows.h>
+#include <locale.h>
 #include "Settings.h"
 #include "GatewayChanger.h"
 
 using namespace DefaultGatewayChanger;
 using namespace System;
 using namespace System::Windows::Forms;
+using namespace std;
 
-[STAThread]
 int main() {	
 	// ”станавливаем локализацию русского €зыка
 	setlocale(LC_ALL, "Russian");

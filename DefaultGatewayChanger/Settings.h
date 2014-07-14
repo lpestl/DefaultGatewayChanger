@@ -10,6 +10,7 @@ namespace DefaultGatewayChanger {
 	using namespace System::Windows::Forms;
 	using namespace System::Data;
 	using namespace System::Drawing;
+	using namespace System::Collections::Generic;
 
 	/// <summary>
 	/// Summary for Settings
@@ -30,35 +31,26 @@ namespace DefaultGatewayChanger {
 			ShowInTaskbar = false;
 			this->WindowState = FormWindowState::Minimized;
 			Hide();
-
-			core->selectNetCard();
-			core->checkingMainChannel();
-
-			String^ ipStrO = gcnew String(core->getIpList()->IpAddress.String);
-			String^ ipStrR = ipStrO;
-			if (core->getIpListReserve() != NULL) {
-				ipStrR = gcnew String(core->getIpListReserve()->IpAddress.String);
-			}
-			String^ maskStr = gcnew String(core->getIpList()->IpMask.String);
-			String^ gwStr = gcnew String(core->getGatewayList()->IpAddress.String);
-			String^ msg = "Текущие: IP:" + ipStrO + "; " + ipStrR + " Mask:" + maskStr + " GW : " + gwStr;
-			toolStripStatusLabelIp->Text = msg;
-
-			String^ nameNC = gcnew String(core->getAdapterName());
-			labelNC->Text = nameNC;
-			String^ descCard = gcnew String(core->getDescription());
-			labelDC->Text = descCard;
-
-			textBoxIpOK->Text = ipStrO;
-			textBoxIpRK->Text = ipStrR;
-
-			textBoxMaskOK->Text = maskStr;
-			textBoxMaskRK->Text = maskStr;
-
-			textBoxShOK->Text = core->getMainGateway();
-			textBoxShRK->Text = core->getReserveGateway();
 			
-			checkedWinElements();
+			List<String^>^ ips = core->getIpAddresses();
+			List<String^>^ masks = core->getMaskIpAddresses();
+
+			for (int i = 0; i < ips->Count; i++) {
+				if (dataGridViewIps->Rows->Count != ips->Count) {
+					dataGridViewIps->Rows->Add();
+				}
+				dataGridViewIps->Rows[i]->Cells[0]->Value = ips[i];
+				dataGridViewIps->Rows[i]->Cells[1]->Value = masks[i];
+			}
+
+			labelDC->Text = core->getMacAdapter();
+			labelNC->Text = core->getNameAdapter();
+
+			textBoxOkGateway->Text = core->getMainGateway();
+			textBoxRkGateway->Text = core->getReserveGateway();
+
+			m_prevMainChan = checkedWinElements();
+			timerPing->Start();
 		}
 
 	protected:
@@ -67,6 +59,7 @@ namespace DefaultGatewayChanger {
 		/// </summary>
 		~Settings()
 		{
+			timerPing->Stop();
 			if (components)
 			{
 				delete components;
@@ -80,41 +73,11 @@ namespace DefaultGatewayChanger {
 	private: System::Windows::Forms::ToolStripMenuItem^  settingToolStripMenuItem;
 	private: System::Windows::Forms::ToolStripSeparator^  toolStripSeparator2;
 	private: System::Windows::Forms::ToolStripMenuItem^  exitToolStripMenuItem;
-	protected:
-
-	protected:
 	private: System::ComponentModel::IContainer^  components;
-	private: System::Windows::Forms::GroupBox^  groupBoxOsnKan;
-	private: System::Windows::Forms::Label^  labelStatIp;
-	private: System::Windows::Forms::Label^  labelShluseOk;
-	private: System::Windows::Forms::Label^  labelMaskOk;
-	private: System::Windows::Forms::Label^  labelIpOK;
-	private: System::Windows::Forms::GroupBox^  groupBoxResKan;
-	private: System::Windows::Forms::Label^  labelIpRk;
-	private: System::Windows::Forms::Label^  labelShluseRk;
-
-
-	private: System::Windows::Forms::Label^  labelMaskRk;
-
-	private: System::Windows::Forms::Label^  labelIpResk;
-
 	private: System::Windows::Forms::StatusStrip^  statusStripInfo;
-
-private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelCanal;
-private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelPing;
-private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
-	private: System::Windows::Forms::TextBox^  textBoxShOK;
-
-	private: System::Windows::Forms::TextBox^  textBoxMaskOK;
-
-	private: System::Windows::Forms::TextBox^  textBoxIpOK;
-	private: System::Windows::Forms::TextBox^  textBoxShRK;
-
-
-	private: System::Windows::Forms::TextBox^  textBoxMaskRK;
-
-	private: System::Windows::Forms::TextBox^  textBoxIpRK;
-
+	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelCanal;
+	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelPing;
+	private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 	private: System::Windows::Forms::Label^  labelNameCard;
 	private: System::Windows::Forms::Label^  labelDescCard;
 	private: System::Windows::Forms::Label^  labelNC;
@@ -124,27 +87,24 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 	private: System::Windows::Forms::RadioButton^  radioButtonRK;
 	private: System::Windows::Forms::RadioButton^  radioButtonOK;
 	private: System::Windows::Forms::Timer^  timerPing;
+	private: System::Windows::Forms::DataGridView^  dataGridViewIps;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  ColumnIP;
+	private: System::Windows::Forms::DataGridViewTextBoxColumn^  ColumnMask;
+	private: System::Windows::Forms::GroupBox^  groupBoxIPs;
+	private: System::Windows::Forms::TextBox^  textBoxRkGateway;
 
-
-
+	private: System::Windows::Forms::TextBox^  textBoxOkGateway;
 	private:
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
 		GatewayChanger^ core;
+		int m_prevMainChan;
 
-		void checkedWinElements() {
-			String^ ipStrO = gcnew String(core->getIpList()->IpAddress.String);
-			String^ ipStrR = ipStrO;
-			if (core->getIpListReserve() != NULL) {
-				ipStrR = gcnew String(core->getIpListReserve()->IpAddress.String);
-			}
-			String^ maskStr = gcnew String(core->getIpList()->IpMask.String);
-			String^ gwStr = gcnew String(core->getGatewayList()->IpAddress.String);
-			String^ msg = "Текущие: IP:" + ipStrO + "; " + ipStrR + " Mask:" + maskStr + " GW : " + gwStr;
-			toolStripStatusLabelIp->Text = msg;
+		int checkedWinElements() {
+			int channel = core->isMainChannel();
 
-			switch (core->isMainChannel())
+			switch (channel)
 			{
 			case 1:
 				radioButtonOK->Checked = true;
@@ -168,6 +128,8 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 				toolStripStatusLabelCanal->Text = "Неизвестный канал";
 				break;
 			}
+
+			return channel;
 		}
 
 #pragma region Windows Form Designer generated code
@@ -187,22 +149,6 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			this->toolStripSeparator2 = (gcnew System::Windows::Forms::ToolStripSeparator());
 			this->exitToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->notifyIconTray = (gcnew System::Windows::Forms::NotifyIcon(this->components));
-			this->groupBoxOsnKan = (gcnew System::Windows::Forms::GroupBox());
-			this->textBoxShOK = (gcnew System::Windows::Forms::TextBox());
-			this->textBoxMaskOK = (gcnew System::Windows::Forms::TextBox());
-			this->textBoxIpOK = (gcnew System::Windows::Forms::TextBox());
-			this->labelStatIp = (gcnew System::Windows::Forms::Label());
-			this->labelShluseOk = (gcnew System::Windows::Forms::Label());
-			this->labelMaskOk = (gcnew System::Windows::Forms::Label());
-			this->labelIpOK = (gcnew System::Windows::Forms::Label());
-			this->groupBoxResKan = (gcnew System::Windows::Forms::GroupBox());
-			this->textBoxShRK = (gcnew System::Windows::Forms::TextBox());
-			this->textBoxMaskRK = (gcnew System::Windows::Forms::TextBox());
-			this->textBoxIpRK = (gcnew System::Windows::Forms::TextBox());
-			this->labelIpRk = (gcnew System::Windows::Forms::Label());
-			this->labelShluseRk = (gcnew System::Windows::Forms::Label());
-			this->labelMaskRk = (gcnew System::Windows::Forms::Label());
-			this->labelIpResk = (gcnew System::Windows::Forms::Label());
 			this->statusStripInfo = (gcnew System::Windows::Forms::StatusStrip());
 			this->toolStripStatusLabelCanal = (gcnew System::Windows::Forms::ToolStripStatusLabel());
 			this->toolStripStatusLabelPing = (gcnew System::Windows::Forms::ToolStripStatusLabel());
@@ -213,14 +159,20 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			this->labelDC = (gcnew System::Windows::Forms::Label());
 			this->buttonSave = (gcnew System::Windows::Forms::Button());
 			this->groupBoxChannel = (gcnew System::Windows::Forms::GroupBox());
+			this->textBoxRkGateway = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxOkGateway = (gcnew System::Windows::Forms::TextBox());
 			this->radioButtonRK = (gcnew System::Windows::Forms::RadioButton());
 			this->radioButtonOK = (gcnew System::Windows::Forms::RadioButton());
 			this->timerPing = (gcnew System::Windows::Forms::Timer(this->components));
+			this->dataGridViewIps = (gcnew System::Windows::Forms::DataGridView());
+			this->ColumnIP = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->ColumnMask = (gcnew System::Windows::Forms::DataGridViewTextBoxColumn());
+			this->groupBoxIPs = (gcnew System::Windows::Forms::GroupBox());
 			this->contextMenuStripSettings->SuspendLayout();
-			this->groupBoxOsnKan->SuspendLayout();
-			this->groupBoxResKan->SuspendLayout();
 			this->statusStripInfo->SuspendLayout();
 			this->groupBoxChannel->SuspendLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridViewIps))->BeginInit();
+			this->groupBoxIPs->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// contextMenuStripSettings
@@ -278,169 +230,15 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			this->notifyIconTray->Text = L"Default Gateway Changer";
 			this->notifyIconTray->Visible = true;
 			// 
-			// groupBoxOsnKan
-			// 
-			this->groupBoxOsnKan->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom)
-				| System::Windows::Forms::AnchorStyles::Left));
-			this->groupBoxOsnKan->Controls->Add(this->textBoxShOK);
-			this->groupBoxOsnKan->Controls->Add(this->textBoxMaskOK);
-			this->groupBoxOsnKan->Controls->Add(this->textBoxIpOK);
-			this->groupBoxOsnKan->Controls->Add(this->labelStatIp);
-			this->groupBoxOsnKan->Controls->Add(this->labelShluseOk);
-			this->groupBoxOsnKan->Controls->Add(this->labelMaskOk);
-			this->groupBoxOsnKan->Controls->Add(this->labelIpOK);
-			this->groupBoxOsnKan->Location = System::Drawing::Point(12, 53);
-			this->groupBoxOsnKan->Name = L"groupBoxOsnKan";
-			this->groupBoxOsnKan->Size = System::Drawing::Size(350, 133);
-			this->groupBoxOsnKan->TabIndex = 1;
-			this->groupBoxOsnKan->TabStop = false;
-			this->groupBoxOsnKan->Text = L"Основной канал";
-			// 
-			// textBoxShOK
-			// 
-			this->textBoxShOK->Location = System::Drawing::Point(123, 96);
-			this->textBoxShOK->Name = L"textBoxShOK";
-			this->textBoxShOK->Size = System::Drawing::Size(221, 20);
-			this->textBoxShOK->TabIndex = 28;
-			// 
-			// textBoxMaskOK
-			// 
-			this->textBoxMaskOK->Location = System::Drawing::Point(123, 67);
-			this->textBoxMaskOK->Name = L"textBoxMaskOK";
-			this->textBoxMaskOK->ReadOnly = true;
-			this->textBoxMaskOK->Size = System::Drawing::Size(221, 20);
-			this->textBoxMaskOK->TabIndex = 27;
-			// 
-			// textBoxIpOK
-			// 
-			this->textBoxIpOK->Location = System::Drawing::Point(123, 38);
-			this->textBoxIpOK->Name = L"textBoxIpOK";
-			this->textBoxIpOK->ReadOnly = true;
-			this->textBoxIpOK->Size = System::Drawing::Size(221, 20);
-			this->textBoxIpOK->TabIndex = 26;
-			// 
-			// labelStatIp
-			// 
-			this->labelStatIp->AutoSize = true;
-			this->labelStatIp->Location = System::Drawing::Point(6, 16);
-			this->labelStatIp->Name = L"labelStatIp";
-			this->labelStatIp->Size = System::Drawing::Size(190, 13);
-			this->labelStatIp->TabIndex = 25;
-			this->labelStatIp->Text = L"Использовать следующий IP-адрес:";
-			// 
-			// labelShluseOk
-			// 
-			this->labelShluseOk->AutoSize = true;
-			this->labelShluseOk->Location = System::Drawing::Point(16, 99);
-			this->labelShluseOk->Name = L"labelShluseOk";
-			this->labelShluseOk->Size = System::Drawing::Size(91, 13);
-			this->labelShluseOk->TabIndex = 10;
-			this->labelShluseOk->Text = L"Основной шлюз:";
-			// 
-			// labelMaskOk
-			// 
-			this->labelMaskOk->AutoSize = true;
-			this->labelMaskOk->Location = System::Drawing::Point(16, 70);
-			this->labelMaskOk->Name = L"labelMaskOk";
-			this->labelMaskOk->Size = System::Drawing::Size(87, 13);
-			this->labelMaskOk->TabIndex = 5;
-			this->labelMaskOk->Text = L"Маска подсети:";
-			// 
-			// labelIpOK
-			// 
-			this->labelIpOK->AutoSize = true;
-			this->labelIpOK->Location = System::Drawing::Point(16, 41);
-			this->labelIpOK->Name = L"labelIpOK";
-			this->labelIpOK->Size = System::Drawing::Size(56, 13);
-			this->labelIpOK->TabIndex = 0;
-			this->labelIpOK->Text = L"IP-адрес: ";
-			// 
-			// groupBoxResKan
-			// 
-			this->groupBoxResKan->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Bottom)
-				| System::Windows::Forms::AnchorStyles::Right));
-			this->groupBoxResKan->Controls->Add(this->textBoxShRK);
-			this->groupBoxResKan->Controls->Add(this->textBoxMaskRK);
-			this->groupBoxResKan->Controls->Add(this->textBoxIpRK);
-			this->groupBoxResKan->Controls->Add(this->labelIpRk);
-			this->groupBoxResKan->Controls->Add(this->labelShluseRk);
-			this->groupBoxResKan->Controls->Add(this->labelMaskRk);
-			this->groupBoxResKan->Controls->Add(this->labelIpResk);
-			this->groupBoxResKan->Location = System::Drawing::Point(372, 53);
-			this->groupBoxResKan->Name = L"groupBoxResKan";
-			this->groupBoxResKan->Size = System::Drawing::Size(350, 133);
-			this->groupBoxResKan->TabIndex = 2;
-			this->groupBoxResKan->TabStop = false;
-			this->groupBoxResKan->Text = L"Резервный канал";
-			// 
-			// textBoxShRK
-			// 
-			this->textBoxShRK->Location = System::Drawing::Point(120, 96);
-			this->textBoxShRK->Name = L"textBoxShRK";
-			this->textBoxShRK->Size = System::Drawing::Size(224, 20);
-			this->textBoxShRK->TabIndex = 29;
-			// 
-			// textBoxMaskRK
-			// 
-			this->textBoxMaskRK->Location = System::Drawing::Point(120, 67);
-			this->textBoxMaskRK->Name = L"textBoxMaskRK";
-			this->textBoxMaskRK->ReadOnly = true;
-			this->textBoxMaskRK->Size = System::Drawing::Size(224, 20);
-			this->textBoxMaskRK->TabIndex = 28;
-			// 
-			// textBoxIpRK
-			// 
-			this->textBoxIpRK->Location = System::Drawing::Point(120, 38);
-			this->textBoxIpRK->Name = L"textBoxIpRK";
-			this->textBoxIpRK->ReadOnly = true;
-			this->textBoxIpRK->Size = System::Drawing::Size(224, 20);
-			this->textBoxIpRK->TabIndex = 27;
-			// 
-			// labelIpRk
-			// 
-			this->labelIpRk->AutoSize = true;
-			this->labelIpRk->Location = System::Drawing::Point(6, 16);
-			this->labelIpRk->Name = L"labelIpRk";
-			this->labelIpRk->Size = System::Drawing::Size(190, 13);
-			this->labelIpRk->TabIndex = 25;
-			this->labelIpRk->Text = L"Использовать следующий IP-адрес:";
-			// 
-			// labelShluseRk
-			// 
-			this->labelShluseRk->AutoSize = true;
-			this->labelShluseRk->Location = System::Drawing::Point(16, 99);
-			this->labelShluseRk->Name = L"labelShluseRk";
-			this->labelShluseRk->Size = System::Drawing::Size(91, 13);
-			this->labelShluseRk->TabIndex = 10;
-			this->labelShluseRk->Text = L"Основной шлюз:";
-			// 
-			// labelMaskRk
-			// 
-			this->labelMaskRk->AutoSize = true;
-			this->labelMaskRk->Location = System::Drawing::Point(16, 70);
-			this->labelMaskRk->Name = L"labelMaskRk";
-			this->labelMaskRk->Size = System::Drawing::Size(87, 13);
-			this->labelMaskRk->TabIndex = 5;
-			this->labelMaskRk->Text = L"Маска подсети:";
-			// 
-			// labelIpResk
-			// 
-			this->labelIpResk->AutoSize = true;
-			this->labelIpResk->Location = System::Drawing::Point(16, 41);
-			this->labelIpResk->Name = L"labelIpResk";
-			this->labelIpResk->Size = System::Drawing::Size(56, 13);
-			this->labelIpResk->TabIndex = 0;
-			this->labelIpResk->Text = L"IP-адрес: ";
-			// 
 			// statusStripInfo
 			// 
 			this->statusStripInfo->Items->AddRange(gcnew cli::array< System::Windows::Forms::ToolStripItem^  >(3) {
 				this->toolStripStatusLabelCanal,
 					this->toolStripStatusLabelPing, this->toolStripStatusLabelIp
 			});
-			this->statusStripInfo->Location = System::Drawing::Point(0, 277);
+			this->statusStripInfo->Location = System::Drawing::Point(0, 275);
 			this->statusStripInfo->Name = L"statusStripInfo";
-			this->statusStripInfo->Size = System::Drawing::Size(734, 22);
+			this->statusStripInfo->Size = System::Drawing::Size(356, 22);
 			this->statusStripInfo->TabIndex = 3;
 			this->statusStripInfo->Text = L"statusStripStatus";
 			// 
@@ -467,7 +265,7 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			// labelNameCard
 			// 
 			this->labelNameCard->AutoSize = true;
-			this->labelNameCard->Location = System::Drawing::Point(24, 6);
+			this->labelNameCard->Location = System::Drawing::Point(9, 6);
 			this->labelNameCard->Name = L"labelNameCard";
 			this->labelNameCard->Size = System::Drawing::Size(110, 13);
 			this->labelNameCard->TabIndex = 4;
@@ -476,18 +274,18 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			// labelDescCard
 			// 
 			this->labelDescCard->AutoSize = true;
-			this->labelDescCard->Location = System::Drawing::Point(24, 28);
+			this->labelDescCard->Location = System::Drawing::Point(9, 28);
 			this->labelDescCard->Name = L"labelDescCard";
-			this->labelDescCard->Size = System::Drawing::Size(138, 13);
+			this->labelDescCard->Size = System::Drawing::Size(107, 13);
 			this->labelDescCard->TabIndex = 5;
-			this->labelDescCard->Text = L"Описание сетевой карты:";
+			this->labelDescCard->Text = L"Физический адрес:";
 			// 
 			// labelNC
 			// 
 			this->labelNC->AutoSize = true;
 			this->labelNC->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(204)));
-			this->labelNC->Location = System::Drawing::Point(176, 6);
+			this->labelNC->Location = System::Drawing::Point(122, 6);
 			this->labelNC->Name = L"labelNC";
 			this->labelNC->Size = System::Drawing::Size(36, 13);
 			this->labelNC->TabIndex = 6;
@@ -498,7 +296,7 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			this->labelDC->AutoSize = true;
 			this->labelDC->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 8.25F, System::Drawing::FontStyle::Bold, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(204)));
-			this->labelDC->Location = System::Drawing::Point(176, 28);
+			this->labelDC->Location = System::Drawing::Point(122, 28);
 			this->labelDC->Name = L"labelDC";
 			this->labelDC->Size = System::Drawing::Size(65, 13);
 			this->labelDC->TabIndex = 7;
@@ -507,7 +305,7 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			// buttonSave
 			// 
 			this->buttonSave->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Right));
-			this->buttonSave->Location = System::Drawing::Point(611, 251);
+			this->buttonSave->Location = System::Drawing::Point(233, 249);
 			this->buttonSave->Name = L"buttonSave";
 			this->buttonSave->Size = System::Drawing::Size(114, 23);
 			this->buttonSave->TabIndex = 8;
@@ -517,22 +315,36 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			// 
 			// groupBoxChannel
 			// 
-			this->groupBoxChannel->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left)
-				| System::Windows::Forms::AnchorStyles::Right));
+			this->groupBoxChannel->Controls->Add(this->textBoxRkGateway);
+			this->groupBoxChannel->Controls->Add(this->textBoxOkGateway);
 			this->groupBoxChannel->Controls->Add(this->radioButtonRK);
 			this->groupBoxChannel->Controls->Add(this->radioButtonOK);
-			this->groupBoxChannel->Location = System::Drawing::Point(12, 192);
+			this->groupBoxChannel->Location = System::Drawing::Point(12, 168);
 			this->groupBoxChannel->Name = L"groupBoxChannel";
-			this->groupBoxChannel->Size = System::Drawing::Size(713, 54);
+			this->groupBoxChannel->Size = System::Drawing::Size(337, 75);
 			this->groupBoxChannel->TabIndex = 9;
 			this->groupBoxChannel->TabStop = false;
 			this->groupBoxChannel->Text = L"Текущий канал";
 			// 
+			// textBoxRkGateway
+			// 
+			this->textBoxRkGateway->Location = System::Drawing::Point(168, 44);
+			this->textBoxRkGateway->Name = L"textBoxRkGateway";
+			this->textBoxRkGateway->Size = System::Drawing::Size(150, 20);
+			this->textBoxRkGateway->TabIndex = 3;
+			// 
+			// textBoxOkGateway
+			// 
+			this->textBoxOkGateway->Location = System::Drawing::Point(168, 18);
+			this->textBoxOkGateway->Name = L"textBoxOkGateway";
+			this->textBoxOkGateway->Size = System::Drawing::Size(150, 20);
+			this->textBoxOkGateway->TabIndex = 2;
+			// 
 			// radioButtonRK
 			// 
-			this->radioButtonRK->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
 			this->radioButtonRK->AutoSize = true;
-			this->radioButtonRK->Location = System::Drawing::Point(360, 25);
+			this->radioButtonRK->Enabled = false;
+			this->radioButtonRK->Location = System::Drawing::Point(15, 45);
 			this->radioButtonRK->Name = L"radioButtonRK";
 			this->radioButtonRK->Size = System::Drawing::Size(115, 17);
 			this->radioButtonRK->TabIndex = 1;
@@ -543,7 +355,8 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			// radioButtonOK
 			// 
 			this->radioButtonOK->AutoSize = true;
-			this->radioButtonOK->Location = System::Drawing::Point(15, 25);
+			this->radioButtonOK->Enabled = false;
+			this->radioButtonOK->Location = System::Drawing::Point(15, 19);
 			this->radioButtonOK->Name = L"radioButtonOK";
 			this->radioButtonOK->Size = System::Drawing::Size(108, 17);
 			this->radioButtonOK->TabIndex = 0;
@@ -553,15 +366,50 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			// 
 			// timerPing
 			// 
-			this->timerPing->Enabled = true;
 			this->timerPing->Interval = 5000;
 			this->timerPing->Tick += gcnew System::EventHandler(this, &Settings::timerPing_Tick);
+			// 
+			// dataGridViewIps
+			// 
+			this->dataGridViewIps->ColumnHeadersHeightSizeMode = System::Windows::Forms::DataGridViewColumnHeadersHeightSizeMode::AutoSize;
+			this->dataGridViewIps->Columns->AddRange(gcnew cli::array< System::Windows::Forms::DataGridViewColumn^  >(2) {
+				this->ColumnIP,
+					this->ColumnMask
+			});
+			this->dataGridViewIps->Location = System::Drawing::Point(15, 19);
+			this->dataGridViewIps->Name = L"dataGridViewIps";
+			this->dataGridViewIps->RowHeadersVisible = false;
+			this->dataGridViewIps->Size = System::Drawing::Size(303, 70);
+			this->dataGridViewIps->TabIndex = 10;
+			// 
+			// ColumnIP
+			// 
+			this->ColumnIP->HeaderText = L"IP-адрес";
+			this->ColumnIP->Name = L"ColumnIP";
+			this->ColumnIP->Width = 150;
+			// 
+			// ColumnMask
+			// 
+			this->ColumnMask->HeaderText = L"Маска подсети";
+			this->ColumnMask->Name = L"ColumnMask";
+			this->ColumnMask->Width = 150;
+			// 
+			// groupBoxIPs
+			// 
+			this->groupBoxIPs->Controls->Add(this->dataGridViewIps);
+			this->groupBoxIPs->Location = System::Drawing::Point(12, 53);
+			this->groupBoxIPs->Name = L"groupBoxIPs";
+			this->groupBoxIPs->Size = System::Drawing::Size(337, 109);
+			this->groupBoxIPs->TabIndex = 11;
+			this->groupBoxIPs->TabStop = false;
+			this->groupBoxIPs->Text = L"IP адреса";
 			// 
 			// Settings
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(734, 299);
+			this->ClientSize = System::Drawing::Size(356, 297);
+			this->Controls->Add(this->groupBoxIPs);
 			this->Controls->Add(this->groupBoxChannel);
 			this->Controls->Add(this->buttonSave);
 			this->Controls->Add(this->labelDC);
@@ -569,21 +417,17 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 			this->Controls->Add(this->labelDescCard);
 			this->Controls->Add(this->labelNameCard);
 			this->Controls->Add(this->statusStripInfo);
-			this->Controls->Add(this->groupBoxResKan);
-			this->Controls->Add(this->groupBoxOsnKan);
 			this->Name = L"Settings";
 			this->Text = L"Настройки";
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &Settings::Settings_FormClosing);
 			this->Resize += gcnew System::EventHandler(this, &Settings::Settings_Resize);
 			this->contextMenuStripSettings->ResumeLayout(false);
-			this->groupBoxOsnKan->ResumeLayout(false);
-			this->groupBoxOsnKan->PerformLayout();
-			this->groupBoxResKan->ResumeLayout(false);
-			this->groupBoxResKan->PerformLayout();
 			this->statusStripInfo->ResumeLayout(false);
 			this->statusStripInfo->PerformLayout();
 			this->groupBoxChannel->ResumeLayout(false);
 			this->groupBoxChannel->PerformLayout();
+			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->dataGridViewIps))->EndInit();
+			this->groupBoxIPs->ResumeLayout(false);
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -599,47 +443,56 @@ private: System::Windows::Forms::ToolStripStatusLabel^  toolStripStatusLabelIp;
 					 Hide();
 				 }
 	}
+
 private: System::Void settingToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 			 Show();
 			 this->WindowState = FormWindowState::Normal;
 }
+
 private: System::Void exitToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 			 Application::Exit();
 }
+
 private: System::Void Settings_Resize(System::Object^  sender, System::EventArgs^  e) {
 }
+
 private: System::Void defGatToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
-			 //defGatToolStripMenuItem->Checked = true;
-			 //resGatToolStripMenuItem->Checked = false;
-			 //if (radioButtonOK->Checked) {
-				 //if (core->setNetworkCardGateway(1)) {
-				 if (core->setNetworkGateway(1)) {
-					 printf("[info] Done changing gateway!!!\n");
-				 }
-				 else {
-					 printf("[error] Bad parametr NChannel.\n");
-				 }
-			 //}
+			 timerPing->Stop();
+			 if (core->changeDefaultGateway(1)) {
+				 printf("[info] Done changing gateway!!!\n");
+			 }
+			 else {
+				 printf("[error] Bad parametr NChannel.\n");
+			 }
+			 //Sleep(5000);
+			 timerPing->Start();
 }
+
 private: System::Void resGatToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
-			 //defGatToolStripMenuItem->Checked = false;
-			 //resGatToolStripMenuItem->Checked = true;
-			 //if (radioButtonRK->Checked) {
-				 //if (core->setNetworkCardGateway(2)) {
-				 if (core->setNetworkGateway(2)) {
-					 printf("[info] Done changing gateway!!!\n");
-				 }
-				 else {
-					 printf("[error] Bad parametr NChannel.\n");
-				 }
-			 //}
+			 timerPing->Stop();
+			 if (core->changeDefaultGateway(2)) {
+				 printf("[info] Done changing gateway!!!\n");
+			 }
+			 else {
+				 printf("[error] Bad parametr NChannel.\n");
+			 }
+			 //Sleep(5000);
+			 timerPing->Start();
 }
-private: System::Void timerPing_Tick(System::Object^  sender, System::EventArgs^  e) {
-			 core->selectNetCard();
-			 core->checkingMainChannel();
+
+private: System::Void timerPing_Tick(System::Object^  sender, System::EventArgs^  e) {			 
+			 //if (m_prevMainChan != core->isMainChannel()) {
 			 checkedWinElements();
+			 //	m_prevMainChan = core->isMainChannel();
+			 //}
+
+			 List<String^>^ gateways = core->getGateways();
+			 toolStripStatusLabelIp->Text = "Шлюз: ";
+			 for (int i = 0; i < gateways->Count; i++) {
+				 toolStripStatusLabelIp->Text += gateways[i];
+				 toolStripStatusLabelIp->Text += "; ";
+			 }
 			 
-			 printf("____________________\nPing tick\n");
 			 if (core->pingGateway()) {
 				 notifyIconTray->Icon = core->getTrueIco();
 				 toolStripStatusLabelPing->Text = "Шлюз доступен";
@@ -647,36 +500,43 @@ private: System::Void timerPing_Tick(System::Object^  sender, System::EventArgs^
 			 }
 			 else {
 				 notifyIconTray->Icon = core->getFalseIco();
-				 toolStripStatusLabelPing->Text = "Шлюз недоступен";
+				 toolStripStatusLabelPing->Text = "Шлюз не доступен";
 				 toolStripStatusLabelPing->ForeColor = Color::Red;
 			 }
 }
+
 private: System::Void buttonSave_Click(System::Object^  sender, System::EventArgs^  e) {
-			 if ((core->setMainGateway(textBoxShOK->Text)) && (core->setReserveGateway(textBoxShRK->Text))) {
+			 if ((core->checkIpString(textBoxOkGateway->Text)) && (core->checkIpString(textBoxRkGateway->Text))) {
+				 core->setMainCanIpGateway(textBoxOkGateway->Text);
+				 core->setReserveCanIpGateway(textBoxRkGateway->Text);
 				 core->saveXmlSettings();
 			 }
 }
 private: System::Void radioButtonRK_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
-			 if (radioButtonRK->Checked) {
-				 //if (core->setNetworkCardGateway(2)) {
-				 if (core->setNetworkGateway(2)) {
-					 printf("[info] Done changing gateway!!!\n");
-				 }
-				 else {
-					 printf("[error] Bad parametr NChannel.\n");
-				 }
-			 }
+			 //timerPing->Stop();
+			 //if (radioButtonRK->Checked) {
+				// //if (core->setNetworkCardGateway(2)) {
+				// if (core->changeDefaultGateway(2)) {
+				//	 printf("[info] Done changing gateway!!!\n");
+				// }
+				// else {
+				//	 printf("[error] Bad parametr NChannel.\n");
+				// }
+			 //}
+			 //timerPing->Start();
 }
 private: System::Void radioButtonOK_CheckedChanged(System::Object^  sender, System::EventArgs^  e) {
-			 if (radioButtonOK->Checked) {
-				 //if (core->setNetworkCardGateway(1)) {
-				 if (core->setNetworkGateway(1)) {
-					 printf("[info] Done changing gateway!!!\n");
-				 }
-				 else {
-					 printf("[error] Bad parametr NChannel.\n");
-				 }
-			 }
+			 //timerPing->Stop();
+			 //if (radioButtonOK->Checked) {
+				// //if (core->setNetworkCardGateway(1)) {
+				// if (core->changeDefaultGateway(1)) {
+				//	 printf("[info] Done changing gateway!!!\n");
+				// }
+				// else {
+				//	 printf("[error] Bad parametr NChannel.\n");
+				// }
+			 //}
+			 //timerPing->Start();
 }
 };
 }
