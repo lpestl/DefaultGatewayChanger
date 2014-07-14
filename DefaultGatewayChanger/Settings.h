@@ -101,6 +101,20 @@ namespace DefaultGatewayChanger {
 		GatewayChanger^ core;
 		int m_prevMainChan;
 
+		void deActivate() {
+			defGatToolStripMenuItem->Enabled = false;
+			resGatToolStripMenuItem->Enabled = false;
+			settingToolStripMenuItem->Enabled = false;
+			exitToolStripMenuItem->Enabled = false;
+		}
+
+		void activate() {
+			defGatToolStripMenuItem->Enabled = true;
+			resGatToolStripMenuItem->Enabled = true;
+			settingToolStripMenuItem->Enabled = true;
+			exitToolStripMenuItem->Enabled = true;
+		}
+
 		int checkedWinElements() {
 			int channel = core->isMainChannel();
 
@@ -458,24 +472,28 @@ private: System::Void Settings_Resize(System::Object^  sender, System::EventArgs
 
 private: System::Void defGatToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 			 timerPing->Stop();
+			 deActivate();
 			 if (core->changeDefaultGateway(1)) {
 				 printf("[info] Done changing gateway!!!\n");
 			 }
 			 else {
 				 printf("[error] Bad parametr NChannel.\n");
 			 }
+			 activate();
 			 //Sleep(5000);
 			 timerPing->Start();
 }
 
 private: System::Void resGatToolStripMenuItem_Click(System::Object^  sender, System::EventArgs^  e) {
 			 timerPing->Stop();
+			 deActivate();
 			 if (core->changeDefaultGateway(2)) {
 				 printf("[info] Done changing gateway!!!\n");
 			 }
 			 else {
 				 printf("[error] Bad parametr NChannel.\n");
 			 }
+			 activate();
 			 //Sleep(5000);
 			 timerPing->Start();
 }
